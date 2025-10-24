@@ -249,6 +249,25 @@ function wca_handle_upload() {
         wp_die( 'No file selected.' );
     }
 
+    $file = $_FILES['wca_file'];
+
+    // ---- VALIDATION ----
+    // Max file size: 5 MB
+    $max_file_size = 5 * 1024 * 1024; // 5MB
+    if ( $file['size'] > $max_file_size ) {
+        wp_die( 'File is too large. Maximum size is 5MB.' );
+    }
+
+    // Validate MIME type using finfo
+    $finfo = finfo_open( FILEINFO_MIME_TYPE );
+    $mime_type = finfo_file( $finfo, $file['tmp_name'] );
+    finfo_close( $finfo );
+
+    if ( $mime_type !== 'application/pdf' ) {
+        wp_die( 'Invalid file type. Only PDF files are allowed.' );
+    }
+    // ---- END VALIDATION ----
+
     $post_id = intval( $_POST['post_id'] ?? 0 );
     $user_id = get_current_user_id();
 
