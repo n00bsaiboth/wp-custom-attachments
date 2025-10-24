@@ -75,6 +75,18 @@ function wca_create_table() {
 register_activation_hook( __FILE__, 'wca_create_table' );
 
 /**
+ * Create .htaccess file to protect the private directory.
+ */
+function wca_create_htaccess() {
+    $htaccess_file = WP_CONTENT_DIR . '/private/.htaccess';
+    if (!file_exists($htaccess_file)) {
+        $rules = "Require all denied";
+        file_put_contents($htaccess_file, $rules);
+    }
+}
+register_activation_hook(__FILE__, 'wca_create_htaccess');
+
+/**
  * Shortcode to retrieve and display files from the custom database table.
  */
 function wca_display_files_list() {
