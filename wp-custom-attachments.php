@@ -43,7 +43,7 @@ function wca_upload_directory( $dirs ) {
     
     // Update the upload path and URL
     $dirs['path'] = $custom_dir;
-    $dirs['url'] = content_url( '/private' ); // Public URL to access files via the server.
+    $dirs['url'] = content_url( '/private' ); 
     
     return $dirs;
 }
@@ -179,8 +179,15 @@ function wca_secure_download() {
     }
 
     // Build absolute path
-    $absolute_path = WP_CONTENT_DIR . '/' . ltrim( $file->file_path, '/' );
+    $base_path = WP_CONTENT_DIR . '/private/';
+    $absolute_path = realpath($base_path . basename($file->file_path));
 
+    // Ensure the file is within the allowed directory
+    if (!$absolute_path || strpos($absolute_path, $base_path) !== 0) {
+        wp_die('Invalid file path.', '403 Forbidden', ['response' => 403]);
+    }
+
+    // Check if file exists
     if ( ! file_exists( $absolute_path ) || ! is_file( $absolute_path ) ) {
         wp_die( 'File missing from storage.', '404 Not Found', [ 'response' => 404 ] );
     }
@@ -190,6 +197,9 @@ function wca_secure_download() {
     header( 'Content-Type: application/octet-stream' );
     header( 'Content-Disposition: inline; filename="' . basename( $file->original_name ) . '"' );
     header( 'Content-Length: ' . filesize( $absolute_path ) );
+    header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+    header( 'Pragma: no-cache' );
+    header( 'Expires: 0' );
 
     readfile( $absolute_path );
     exit;
@@ -202,7 +212,7 @@ add_action( 'init', 'wca_secure_download' );
  */
 function wca_upload_form_shortcode() {
     if ( ! is_user_logged_in() || ! wca_user_has_role( 'community' ) ) {
-        return ''; // Hide for non-community users
+        return '';
     }
 
     // Generate nonce for security
@@ -251,15 +261,15 @@ function wca_handle_upload() {
     // Original filename
     $original_name = sanitize_file_name( $_FILES['wca_file']['name'] );
 
-    // 🔒 Scramble filename
+    // Random filename
     $extension = pathinfo( $original_name, PATHINFO_EXTENSION );
     $extension = $extension ? '.' . strtolower( $extension ) : '';
-    $scrambled_name = sha1( uniqid( bin2hex( random_bytes(8) ), true ) ) . $extension;
+    $random_name = sha1( uniqid( bin2hex( random_bytes(8) ), true ) ) . $extension;
 
-    $destination = trailingslashit( $upload_dir ) . $scrambled_name;
+    $destination = trailingslashit( $upload_dir ) . $random_name;
 
     // Relative path for database
-    $relative_path = 'private/' . $scrambled_name;
+    $relative_path = 'private/' . $random_name;
 
     if ( move_uploaded_file( $_FILES['wca_file']['tmp_name'], $destination ) ) {
         global $wpdb;
