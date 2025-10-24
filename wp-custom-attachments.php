@@ -283,8 +283,6 @@ function wca_handle_upload() {
         wp_die( 'Error moving uploaded file.' );
     }
 }
-
 add_action( 'admin_post_wca_handle_upload', 'wca_handle_upload' );
-add_action( 'admin_post_nopriv_wca_handle_upload', 'wca_handle_upload' );
 
 
