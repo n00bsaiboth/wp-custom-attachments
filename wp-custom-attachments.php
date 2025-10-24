@@ -30,26 +30,6 @@ function wca_user_has_role( $role, $user_id = null ) {
 }
 
 /**
- * Show a special message for community members, but keep content visible for everyone.
- */
-function wca_show_frontend_content( $content ) {
-    // Default output is just the normal post content
-    $extra_content = '';
-
-    // Check if user is logged in AND has the community role
-    if ( is_user_logged_in() && wca_user_has_role( 'community' ) ) {
-        $extra_content  = '<div class="wca-content">';
-        $extra_content .= '<p><strong>Welcome, Community Member!</strong></p>';
-        $extra_content .= '<p>This is private content available only to community users.</p>';
-        $extra_content .= '</div>';
-    }
-
-    // Return both (message if applicable + normal content)
-    return $extra_content . $content;
-}
-add_filter( 'the_content', 'wca_show_frontend_content' );
-
-/**
  * Change the upload directory for custom attachments.
  */
 function wca_upload_directory( $dirs ) {
