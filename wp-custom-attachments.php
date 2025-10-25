@@ -14,6 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Check if user has required permissions.
+ */
+function wca_user_has_permission() {
+    return is_user_logged_in() && wca_user_has_role('community');
+}
+
+/**
  * Check if a user has a specific role.
  */
 function wca_user_has_role( $role, $user_id = null ) {
@@ -27,6 +34,29 @@ function wca_user_has_role( $role, $user_id = null ) {
     }
 
     return in_array( $role, (array) $user->roles, true );
+}
+
+/**
+ * Validate uploaded file.
+ *
+ */
+function wca_validate_file($file) {
+    // Max file size: 5 MB
+    $max_file_size = 5 * 1024 * 1024;
+    if ($file['size'] > $max_file_size) {
+        return new WP_Error('file_too_large', 'File is too large. Maximum size is 5MB.');
+    }
+
+    // Validate MIME type using finfo
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime_type = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    if ($mime_type !== 'application/pdf') {
+        return new WP_Error('invalid_file_type', 'Invalid file type. Only PDF files are allowed.');
+    }
+
+    return true;
 }
 
 /**
@@ -100,7 +130,7 @@ add_action( 'wp_enqueue_scripts', 'wca_enqueue_assets' );
  */
 function wca_display_files_list() {
         // Check if user is logged in AND has the community role
-    if ( is_user_logged_in() && wca_user_has_role( 'community' ) ) {
+    if ( wca_user_has_permission() ) {
         global $wpdb, $post;
 
         // Debugging: Log and display the current post ID
@@ -179,7 +209,7 @@ function wca_secure_download() {
     }
 
     // Require login + "community" role
-    if ( ! is_user_logged_in() || ! wca_user_has_role( 'community' ) ) {
+    if ( ! wca_user_has_permission() ) {
         wp_die( 'Access denied. You do not have permission to download this file.', '403 Forbidden', [ 'response' => 403 ] );
     }
 
@@ -232,7 +262,7 @@ add_action( 'init', 'wca_secure_download' );
  * Frontend file upload form for community users.
  */
 function wca_upload_form_shortcode() {
-    if ( ! is_user_logged_in() || ! wca_user_has_role( 'community' ) ) {
+    if ( ! wca_user_has_permission() ) {
         return '';
     }
 
@@ -264,7 +294,7 @@ add_shortcode( 'wca_upload_form', 'wca_upload_form_shortcode' );
  * Handle frontend file uploads.
  */
 function wca_handle_upload() {
-    if ( ! is_user_logged_in() || ! wca_user_has_role( 'community' ) ) {
+    if ( ! wca_user_has_permission() ) {
         wp_die( 'You do not have permission to upload files.' );
     }
 
@@ -274,24 +304,13 @@ function wca_handle_upload() {
         wp_die( 'No file selected.' );
     }
 
+    // Validate the uploaded file, pdf/5MB limit
     $file = $_FILES['wca_file'];
-
-    // ---- VALIDATION ----
-    // Max file size: 5 MB
-    $max_file_size = 5 * 1024 * 1024; // 5MB
-    if ( $file['size'] > $max_file_size ) {
-        wp_die( 'File is too large. Maximum size is 5MB.' );
+    
+    $validation_result = wca_validate_file($file);
+    if (is_wp_error($validation_result)) {
+        wp_die($validation_result->get_error_message());
     }
-
-    // Validate MIME type using finfo
-    $finfo = finfo_open( FILEINFO_MIME_TYPE );
-    $mime_type = finfo_file( $finfo, $file['tmp_name'] );
-    finfo_close( $finfo );
-
-    if ( $mime_type !== 'application/pdf' ) {
-        wp_die( 'Invalid file type. Only PDF files are allowed.' );
-    }
-    // ---- END VALIDATION ----
 
     $post_id = intval( $_POST['post_id'] ?? 0 );
     $user_id = get_current_user_id();
