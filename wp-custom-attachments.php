@@ -87,6 +87,15 @@ function wca_create_htaccess() {
 register_activation_hook(__FILE__, 'wca_create_htaccess');
 
 /**
+ * Enqueue plugin's necessary styles and scripts.
+ */
+function wca_enqueue_assets() {
+    wp_enqueue_style( 'wca-styles', plugin_dir_url( __FILE__ ) . 'assets/css/style.css' );
+    wp_enqueue_script( 'wca-scripts', plugin_dir_url( __FILE__ ) . 'assets/js/script.js');
+}
+add_action( 'wp_enqueue_scripts', 'wca_enqueue_assets' );
+
+/**
  * Shortcode to retrieve and display files from the custom database table.
  */
 function wca_display_files_list() {
@@ -232,16 +241,20 @@ function wca_upload_form_shortcode() {
 
     ob_start();
     ?>
-    <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" class="wca-upload-form">
-        <input type="hidden" name="action" value="wca_handle_upload">
-        <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
-        <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
+    <div id="wca-upload">
+        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" class="wca-upload-form">
+            <input type="hidden" name="action" value="wca_handle_upload">
+            <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
+            <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
+            <div>
+            <label for="wca_file" class="form-label">Select a file to upload:</label>
+            <input type="file" name="wca_file" class="form-control" id="wca_file" required>
+            </div>
+            
 
-        <label for="wca_file">Select a file to upload:</label><br>
-        <input type="file" name="wca_file" id="wca_file" required><br><br>
-
-        <button type="submit">Upload File</button>
-    </form>
+            <button type="submit">Upload File</button>
+        </form>
+    </div>
     <?php
     return ob_get_clean();
 }
