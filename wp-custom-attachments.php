@@ -382,7 +382,7 @@ function wca_add_settings_page() {
     add_options_page(
         'WP Custom Attachments Settings',
         'WP Custom Attachments',
-        'manage_options',
+        'read',
         'wca-settings',
         'wca_render_settings_page'
     );
@@ -394,6 +394,11 @@ add_action( 'admin_menu', 'wca_add_settings_page' );
  */
 
 function wca_render_settings_page() {
+    // Restrict access: only admins or community members
+    if ( ! current_user_can( 'manage_options' ) && ! wca_user_has_role( 'community' ) ) {
+        wp_die( 'You do not have permission to view this page.', '403 Forbidden', [ 'response' => 403 ] );
+    }
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'custom_attachments';
     $current_user_id = get_current_user_id();
@@ -484,47 +489,46 @@ function wca_render_settings_page() {
  * Handle file deletion from the admin area
  */ 
 function wca_handle_file_delete() {
-    // Only logged-in users
     if ( ! is_user_logged_in() ) {
-        wp_die( 'Unauthorized.' );
+        wp_die( 'You must be logged in to delete files.' );
     }
 
-    // Validate nonce
     check_admin_referer( 'wca_handle_file_delete' );
 
     global $wpdb;
     $table_name = $wpdb->prefix . 'custom_attachments';
+    $current_user_id = get_current_user_id();
 
-    $file_id = isset( $_GET['file_id'] ) ? intval( $_GET['file_id'] ) : 0;
-    $user_id = get_current_user_id();
-
+    $file_id = intval( $_GET['file_id'] ?? 0 );
     if ( ! $file_id ) {
-        wp_die( 'Invalid file ID.' );
+        wp_die( 'Invalid request.' );
     }
 
-    // Fetch file info
-    $file = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $file_id ) );
+    // Fetch the file record
+    $file = $wpdb->get_row(
+        $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $file_id )
+    );
 
     if ( ! $file ) {
         wp_die( 'File not found.' );
     }
 
-    // Permission check: Admins can delete all, users only their own files
-    if ( ! current_user_can( 'manage_options' ) && intval( $file->user_id ) !== $user_id ) {
-        wp_die( 'You do not have permission to delete this file.' );
+    // Permission check:
+    // Admins can delete anything, community users only their own files
+    if ( ! current_user_can( 'manage_options' ) && (int) $file->user_id !== (int) $current_user_id ) {
+        wp_die( 'You do not have permission to delete this file.', '403 Forbidden', [ 'response' => 403 ] );
     }
 
-    // Delete file from disk
+    // Delete the file from disk
     $absolute_path = WP_CONTENT_DIR . '/' . $file->file_path;
     if ( file_exists( $absolute_path ) ) {
         unlink( $absolute_path );
     }
 
-    // Delete database entry
+    // Delete from database
     $wpdb->delete( $table_name, [ 'id' => $file_id ], [ '%d' ] );
 
-    // Redirect back to settings page
-    wp_redirect( admin_url( 'options-general.php?page=wca-settings&deleted=1' ) );
+    wp_redirect( admin_url( 'admin.php?page=wca-settings&deleted=1' ) );
     exit;
 }
 add_action( 'admin_post_wca_handle_file_delete', 'wca_handle_file_delete' );
