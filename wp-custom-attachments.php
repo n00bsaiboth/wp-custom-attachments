@@ -125,6 +125,13 @@ function wca_enqueue_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'wca_enqueue_assets' );
 
+function wca_admin_assets($hook) {
+    if ($hook === 'settings_page_wca-settings') {
+        wp_enqueue_style('wca-admin-styles', plugin_dir_url(__FILE__) . 'assets/css/admin.css');
+    }
+}
+add_action('admin_enqueue_scripts', 'wca_admin_assets');
+
 /**
  * Shortcode to retrieve and display files from the custom database table.
  */
@@ -358,4 +365,176 @@ function wca_handle_upload() {
 }
 add_action( 'admin_post_wca_handle_upload', 'wca_handle_upload' );
 
+/**
+ * Add settings for the plugin
+ */
 
+function wca_register_settings() {
+
+}
+add_action( 'admin_init', 'wca_register_settings' );
+
+/**
+ * Add settings page to the admin menu
+ */
+
+function wca_add_settings_page() {
+    add_options_page(
+        'WP Custom Attachments Settings',
+        'WP Custom Attachments',
+        'manage_options',
+        'wca-settings',
+        'wca_render_settings_page'
+    );
+}
+add_action( 'admin_menu', 'wca_add_settings_page' );
+
+/**
+ * Render the settings page
+ */
+
+function wca_render_settings_page() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'custom_attachments';
+    $current_user_id = get_current_user_id();
+
+    // Fetch files — admins see all, users see only their own
+    if ( current_user_can( 'manage_options' ) ) {
+        $files = $wpdb->get_results( "SELECT * FROM $table_name ORDER BY uploaded_at DESC" );
+    } else {
+        $files = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM $table_name WHERE user_id = %d ORDER BY uploaded_at DESC",
+            $current_user_id
+        ) );
+    }
+    ?>
+    <div class="wrap">
+        <h1>WP Custom Attachments Settings</h1>
+
+        <?php if ( isset( $_GET['deleted'] ) ) : ?>
+            <div class="updated notice"><p>File deleted successfully.</p></div>
+        <?php endif; ?>
+
+        <?php if ( empty( $files ) ) : ?>
+            <p>No files uploaded yet.</p>
+        <?php else : ?>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Original Name</th>
+                        <th>User</th>
+                        <th>Post</th>
+                        <th>Uploaded At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $files as $file ) : 
+                        $user_info = get_userdata( $file->user_id );
+                        $username  = $user_info ? $user_info->display_name : 'Unknown User';
+
+                        // Get the post title
+                        $post_title = $file->post_id ? get_the_title( $file->post_id ) : '(no post)';
+                        if ( empty( $post_title ) ) {
+                            $post_title = '(no title)';
+                        }
+
+                        // Make title clickable (to view post)
+                        $post_link = get_permalink( $file->post_id );
+                        if ( $post_link ) {
+                            $post_title = sprintf(
+                                '<a href="%s" target="_blank">%s</a>',
+                                esc_url( $post_link ),
+                                esc_html( $post_title )
+                            );
+                        } else {
+                            $post_title = esc_html( $post_title );
+                        }
+
+                        // Delete action link
+                        $delete_url = wp_nonce_url(
+                            admin_url( 'admin-post.php?action=wca_handle_file_delete&file_id=' . intval( $file->id ) ),
+                            'wca_handle_file_delete'
+                        );
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $file->id ); ?></td>
+                        <td><?php echo esc_html( $file->original_name ); ?></td>
+                        <td><?php echo esc_html( $username ); ?></td>
+                        <td><?php echo $post_title; ?></td>
+                        <td><?php echo esc_html( $file->uploaded_at ); ?></td>
+                        <td>
+                            <a href="<?php echo esc_url( $delete_url ); ?>" 
+                               class="button button-small" 
+                               onclick="return confirm('Are you sure you want to delete this file?');">
+                               Delete
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Handle file deletion from the admin area
+ */ 
+function wca_handle_file_delete() {
+    // Only logged-in users
+    if ( ! is_user_logged_in() ) {
+        wp_die( 'Unauthorized.' );
+    }
+
+    // Validate nonce
+    check_admin_referer( 'wca_handle_file_delete' );
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'custom_attachments';
+
+    $file_id = isset( $_GET['file_id'] ) ? intval( $_GET['file_id'] ) : 0;
+    $user_id = get_current_user_id();
+
+    if ( ! $file_id ) {
+        wp_die( 'Invalid file ID.' );
+    }
+
+    // Fetch file info
+    $file = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $file_id ) );
+
+    if ( ! $file ) {
+        wp_die( 'File not found.' );
+    }
+
+    // Permission check: Admins can delete all, users only their own files
+    if ( ! current_user_can( 'manage_options' ) && intval( $file->user_id ) !== $user_id ) {
+        wp_die( 'You do not have permission to delete this file.' );
+    }
+
+    // Delete file from disk
+    $absolute_path = WP_CONTENT_DIR . '/' . $file->file_path;
+    if ( file_exists( $absolute_path ) ) {
+        unlink( $absolute_path );
+    }
+
+    // Delete database entry
+    $wpdb->delete( $table_name, [ 'id' => $file_id ], [ '%d' ] );
+
+    // Redirect back to settings page
+    wp_redirect( admin_url( 'options-general.php?page=wca-settings&deleted=1' ) );
+    exit;
+}
+add_action( 'admin_post_wca_handle_file_delete', 'wca_handle_file_delete' );
+
+/**
+ * Cleanup on plugin uninstall: remove custom database table.
+ */
+function wca_cleanup() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'custom_attachments';
+    $wpdb->query("DROP TABLE IF EXISTS $table_name");
+}
+register_uninstall_hook(__FILE__, 'wca_cleanup');
