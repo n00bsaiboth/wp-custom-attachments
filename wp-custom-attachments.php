@@ -177,7 +177,7 @@ function wca_display_files_list() {
         }
 
         // Start the unordered list
-        $output = '<ul>';
+        $output = '<ul class="wca-file-list">';
 
         foreach ( $results as $file ) {
             // Get username for display
