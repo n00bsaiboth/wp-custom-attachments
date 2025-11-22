@@ -178,9 +178,11 @@ function wca_display_files_list() {
         if ( empty( $results ) ) {
             return '<p>No attachment files for this post.</p>';
         }
+        // Start building the output with a title
+        $output  = '<h3 class="wca-file-list-title">View Attached Files (if any)</h3>';
 
         // Start the unordered list
-        $output = '<ul class="wca-file-list">';
+        $output .= '<ul class="wca-file-list">';
 
         foreach ( $results as $file ) {
             // Get username for display
@@ -282,6 +284,7 @@ function wca_upload_form_shortcode() {
     ob_start();
     ?>
     <div id="wca-upload">
+        <h3>Upload a file</h3>
         <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" class="wca-upload-form">
             <input type="hidden" name="action" value="wca_handle_upload">
             <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
