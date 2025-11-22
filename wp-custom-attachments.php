@@ -4,6 +4,7 @@
  * Plugin URI: https://github.com/n00bsaiboth/wp-custom-attachments
  * Description: Simple plugin to add an attachments outside document root, so it's not accessible via browser or search engines. Inspired by ACF.
  * Version: 1.0
+ * Domain Path: /languages
  * Author: Jussi Jokinen
  * Author URI: https://openinnovations.io
  * License: MIT
@@ -136,6 +137,15 @@ function wca_admin_assets($hook) {
 add_action('admin_enqueue_scripts', 'wca_admin_assets');
 
 /**
+ * Load plugin textdomain for translations.
+ */
+function wca_load_textdomain() {
+    load_plugin_textdomain( 'wca-plugin', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+}
+add_action( 'plugins_loaded', 'wca_load_textdomain' );
+
+
+/**
  * Shortcode to retrieve and display files from the custom database table.
  */
 function wca_display_files_list() {
@@ -176,10 +186,10 @@ function wca_display_files_list() {
         );
 
         if ( empty( $results ) ) {
-            return '<p>No attachment files for this post.</p>';
+            return '<p>' . esc_html( __('Ei liitetiedostoja', 'wca-plugin') ) . '</p>';
         }
         // Start building the output with a title
-        $output  = '<h3 class="wca-file-list-title">View Attached Files (if any)</h3>';
+        $output  = '<h3 class="wca-file-list-title">' . esc_html( __('Liitetiedostot', 'wca-plugin') ) . '</h3>';
 
         // Start the unordered list
         $output .= '<ul class="wca-file-list">';
@@ -284,18 +294,18 @@ function wca_upload_form_shortcode() {
     ob_start();
     ?>
     <div id="wca-upload">
-        <h3>Upload a file</h3>
+        <h3> <?php echo esc_html( __('Lataa liitetiedosto', 'wca-plugin') ); ?></h3>
         <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" class="wca-upload-form">
             <input type="hidden" name="action" value="wca_handle_upload">
             <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
             <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
             <div>
-            <label for="wca_file" class="form-label">Select a file to upload:</label>
+            <label for="wca_file" class="form-label"><?php echo esc_html( __('Valitse tiedosto', 'wca-plugin') ); ?></label>
             <input type="file" name="wca_file" class="form-control" id="wca_file" required>
             </div>
             
 
-            <button type="submit">Upload File</button>
+            <button type="submit"><?php echo esc_html( __('Lataa tiedosto', 'wca-plugin') ); ?></button>
         </form>
     </div>
     <?php

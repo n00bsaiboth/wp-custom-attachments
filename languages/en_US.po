@@ -1,0 +1,14 @@
+msgid "Liitetiedostot"
+msgstr "Attached files"
+
+msgid "Lataa liitetiedosto"
+msgstr "Upload attachment"
+
+msgid "Valitse tiedosto"
+msgstr "Choose file"
+
+msgid "Lataa tiedosto"
+msgstr "Upload file"
+
+msgid "Ei liitetiedostoja"
+msgstr "No attachment files for this post."

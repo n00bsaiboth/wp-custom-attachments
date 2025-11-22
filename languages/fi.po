@@ -1,0 +1,14 @@
+msgid "Liitetiedostot"
+msgstr "Liitetiedostot"
+
+msgid "Ei liitetiedostoja"
+msgstr "Ei liitetiedostoja"
+
+msgid "Lataa liitetiedosto"
+msgstr "Lataa liitetiedosto"
+
+msgid "Valitse tiedosto"
+msgstr "Valitse tiedosto"
+
+msgid "Lataa tiedosto"
+msgstr "Lataa tiedosto"
