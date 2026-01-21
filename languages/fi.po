@@ -12,3 +12,6 @@ msgstr "Valitse tiedosto"
 
 msgid "Lataa tiedosto"
 msgstr "Lataa tiedosto"
+
+msgid "Ainoastaan PDF-tiedostot on sallittuja ja tiedoston maksimikoko on 5 megatavua"
+msgstr "Ainoastaan PDF-tiedostot on sallittuja ja tiedoston maksimikoko on 5 megatavua"

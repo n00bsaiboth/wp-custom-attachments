@@ -295,17 +295,22 @@ function wca_upload_form_shortcode() {
     ?>
     <div id="wca-upload">
         <h3> <?php echo esc_html( __('Lataa liitetiedosto', 'wca-plugin') ); ?></h3>
-        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" class="wca-upload-form">
+        <p><?php echo esc_html( __('Ainoastaan PDF-tiedostot on sallittuja ja tiedoston maksimikoko on 5 megatavua', 'wca-plugin') ) ?>.</p>
+        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="POST" enctype="multipart/form-data" id="wca-upload-form">
             <input type="hidden" name="action" value="wca_handle_upload">
             <input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
             <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
+            
             <div>
-            <label for="wca_file" class="form-label"><?php echo esc_html( __('Valitse tiedosto', 'wca-plugin') ); ?></label>
-            <input type="file" name="wca_file" class="form-control" id="wca_file" required>
+                <label for="wca-file" class="form-label"><?php echo esc_html( __('Valitse tiedosto', 'wca-plugin') ); ?></label>
+                <input type="file" name="wca-file" class="form-control" id="wca-file" accept=".pdf, application/pdf" required>
             </div>
             
+            <div id="wca-notification">
 
-            <button type="submit"><?php echo esc_html( __('Lataa tiedosto', 'wca-plugin') ); ?></button>
+            </div>
+
+            <button type="submit" id="wca-submit" class="wca-hidden"><?php echo esc_html( __('Lataa tiedosto', 'wca-plugin') ); ?></button>
         </form>
     </div>
     <?php
@@ -323,12 +328,12 @@ function wca_handle_upload() {
 
     check_admin_referer( 'wca_file_upload' );
 
-    if ( empty( $_FILES['wca_file']['name'] ) ) {
+    if ( empty( $_FILES['wca-file']['name'] ) ) {
         wp_die( 'No file selected.' );
     }
 
     // Validate the uploaded file, pdf/5MB limit
-    $file = $_FILES['wca_file'];
+    $file = $_FILES['wca-file'];
     
     $validation_result = wca_validate_file($file);
     if (is_wp_error($validation_result)) {
@@ -345,7 +350,7 @@ function wca_handle_upload() {
     }
 
     // Original filename
-    $original_name = sanitize_file_name( $_FILES['wca_file']['name'] );
+    $original_name = sanitize_file_name( $_FILES['wca-file']['name'] );
 
     // Random filename
     $extension = pathinfo( $original_name, PATHINFO_EXTENSION );
@@ -357,7 +362,7 @@ function wca_handle_upload() {
     // Relative path for database
     $relative_path = 'private/' . $random_name;
 
-    if ( move_uploaded_file( $_FILES['wca_file']['tmp_name'], $destination ) ) {
+    if ( move_uploaded_file( $_FILES['wca-file']['tmp_name'], $destination ) ) {
         global $wpdb;
         $table_name = $wpdb->prefix . 'custom_attachments';
 

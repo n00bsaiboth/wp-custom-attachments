@@ -12,3 +12,6 @@ msgstr "Upload file"
 
 msgid "Ei liitetiedostoja"
 msgstr "No attachment files for this post."
+
+msgid "Ainoastaan PDF-tiedostot on sallittuja ja tiedoston maksimikoko on 5 megatavua"
+msgstr "Only PDF files are allowed and the maximum file size is 5 megabytes"

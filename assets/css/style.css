@@ -7,19 +7,19 @@
     margin: 2rem 0;
 }
 
-.wca-upload-form {
+#wca-upload-form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.wca-upload-form label {
+#wca-upload-form label {
     font-weight: 600;
     color: #222;
     margin-bottom: 0.25rem;
 }
 
-.wca-upload-form input[type="file"] {
+#wca-upload-form input[type="file"] {
     display: block;
     padding: 0.6rem;
     border: 1px solid #ccc;
@@ -29,13 +29,13 @@
     transition: border-color 0.2s ease-in-out;
 }
 
-.wca-upload-form input[type="file"]:focus {
+#wca-upload-form input[type="file"]:focus {
     border-color: #006633;
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 102, 51, 0.25);
 }
 
-.wca-upload-form button {
+#wca-upload-form button {
     align-self: flex-start;
     background: #006633;
     color: #fff;
@@ -47,12 +47,12 @@
     transition: background 0.2s ease-in-out, transform 0.1s;
 }
 
-.wca-upload-form button:hover {
+#wca-upload-form button:hover {
     background: #004d26; /* darker green hover */
     transform: translateY(-1px);
 }
 
-.wca-upload-form button:active {
+#wca-upload-form button:active {
     transform: translateY(0);
 }
 
@@ -84,4 +84,16 @@
 .wca-file-list a:hover {
     text-decoration: underline;
     color: #004d26;
+}
+
+.wca-hidden {
+    display: none;
+}
+
+.wca-visible {
+    display: block;
+}
+
+.wca-response {
+    color: red;
 }
